@@ -12,24 +12,27 @@ pool:
 variables:
   TF_VERSION: '1.6.0'
 
-steps:
-- task: TerraformInstaller@1
-  inputs:
-    terraformVersion: $(TF_VERSION)
+stages:
+- stage: Terraform
+  jobs:
+  - job: tf
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: $(TF_VERSION)
 
-# ✅ Authenticate to Azure using the service connection
-- task: AzureCLI@2
-  inputs:
-    azureSubscription: 'e3d7bd63-60f7-4a78-921f-c70964b5b534'  # Replace with your actual service connection name if necessary
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      # Init and apply
-      terraform init
-      terraform plan -out=tfplan
-      terraform apply -auto-approve tfplan
-  env:
-    ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-    ARM_TENANT_ID: $(ARM_TENANT_ID)
-    ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'e3d7bd63-60f7-4a78-921f-c70964b5b534'   # ✅ Optional if you're using ARM_* instead
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        inlineScript: |
+          terraform init -reconfigure
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+      env:
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
